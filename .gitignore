@@ -1,0 +1,5 @@
+venv
+data
+bot_token
+group_id
+__pycache__

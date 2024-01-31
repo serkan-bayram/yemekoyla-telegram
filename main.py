@@ -6,11 +6,12 @@ from getMenuInfo import getMenuInfo
 from downloadMenu import downloadMenu
 from getMenuText import getMenuText
 from errors import getMenuInfoError, downloadMenuError
+from shouldWeSend import shouldWeSend
 
-# logging.basicConfig(
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     level=logging.INFO
-# )
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 with open("bot_token", "r") as f:
     TOKEN = f.read()
@@ -21,8 +22,6 @@ with open("group_id", "r") as f:
     GROUP_ID = f.read()
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.effective_chat)
-
     try:
         menuArray, menuURL, menuDate = getMenuInfo()
     except Exception as e:
@@ -42,28 +41,49 @@ async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
+async def sendMenuOfDay(context: ContextTypes.DEFAULT_TYPE):
+    try:
+        menuArray, menuURL, menuDate = getMenuInfo()
+        
+        if not shouldWeSend(menuDate):
+            return
+    except Exception as e:
+        print(e)
+        return
+    
+    try:
+        filename = downloadMenu(menuDate, menuURL)
+        await context.bot.send_photo(chat_id=GROUP_ID, photo=open(f"./data/{filename}", "rb"))
+        
+        menuText = getMenuText(menuArray)
+        await context.bot.send_message(chat_id=GROUP_ID, text=menuText)
+    except Exception as e:
+        print(e)
+        return  
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️"
+
+    await context.bot.send_message(chat_id=update.effective_user.id, text=text)
+
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Üzgünüm, girdiğiniz komutu anlayamadım.")
-
-
-# async def menuTimer():
-#     async with bot:
-#         await bot.send_message(text="asdsadsa", chat_id=GROUP_ID)
 
 
 if __name__ == '__main__':
     print("Bot is alive.")
 
-
     application = ApplicationBuilder().token(TOKEN).build()
     
     getMenu_handler = CommandHandler('menu', getMenuByRequest)
-    # echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
+    start_handler = CommandHandler(["basla", "yardim"], start)
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
 
+    application.job_queue.run_repeating(callback=sendMenuOfDay, interval=1800, chat_id=GROUP_ID)
     
     application.add_handler(getMenu_handler)
-    # application.add_handler(echo_handler)
+    application.add_handler(start_handler)
     application.add_handler(unknown_handler) # This should be in last line
 
     application.run_polling()

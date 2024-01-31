@@ -2,7 +2,7 @@ import requests
 import ast
 
 def getMenuInfo():
-    menu = requests.get("http://localhost:3000/api/getMenu")
+    menu = requests.get("http://yemekhane-puanla.vercel.app/api/getMenu")
     
     menuArray = ast.literal_eval(menu.json()["menu"]["menu"])
     menuURL = menu.json()["menu"]["url"]

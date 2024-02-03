@@ -10,6 +10,7 @@ from errors import getMenuInfoError, downloadMenuError
 from shouldWeSend import shouldWeSend
 from saveRating import saveRating
 from bindMenuWithPoll import bindMenuWithPoll
+from bindTelegram import bindTelegram
 
 # logging.basicConfig(
 #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -24,7 +25,9 @@ bot = telegram.Bot(TOKEN)
 with open("group_id", "r") as f:
     GROUP_ID = f.read()
 
-API_URL = "https://yemekhane-puanla.vercel.app/api"
+# API_URL = "https://yemekhane-puanla.vercel.app/api"
+API_URL = "http://localhost:3000/api"
+
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -126,8 +129,22 @@ async def receivePollAnswer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN)
 
+    await context.bot.send_message(chat_id=answer.user.id, text="Değerlendirmeniz kaydedildi! Teşekkürler. ☺️")
+
+
 def oyla(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("")
+
+
+async def bagla(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) != 1:
+        await context.bot.send_message(chat_id=update.effective_user.id, text="Geçersiz komut.\nKullanım şekli: /bagla {kullanıcı-adın}")
+        return
+    
+    response = bindTelegram(update.effective_user.id, context.args[0], API_URL, TOKEN)
+
+    await context.bot.send_message(chat_id=update.effective_user.id, text=response)
+
 
 if __name__ == '__main__':
     print("Bot is alive.")
@@ -139,7 +156,7 @@ if __name__ == '__main__':
     poll_handler = CommandHandler("poll", poll)
     receivePollAnswer_handler = PollAnswerHandler(receivePollAnswer)
     start_handler = CommandHandler(["basla", "yardim", "start"], start)
-    oyla_handler = CommandHandler("oyla", oyla)
+    bagla_handler = CommandHandler("bagla", bagla)
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
 
 
@@ -149,7 +166,7 @@ if __name__ == '__main__':
     application.add_handler(getMenu_handler)
     application.add_handler(start_handler)
     application.add_handler(poll_handler)
-    application.add_handler(oyla_handler)
+    application.add_handler(bagla_handler)
     application.add_handler(receivePollAnswer_handler)
     application.add_handler(unknown_handler) # This should be in last line
 

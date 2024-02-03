@@ -71,12 +71,12 @@ async def sendMenuOfDay(context: ContextTypes.DEFAULT_TYPE):
     
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️"
+    text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️\n\n/oyla komutuyla Telegram hesabınızı Yemekoyla ile bağlayabilir, yemekhane yemeklerimizi iyileştirme yolunda sizinde katkınız olabilir. 😊"
 
     await context.bot.send_message(chat_id=update.effective_user.id, text=text)
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Üzgünüm, girdiğiniz komutu anlayamadım.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Üzgünüm, girdiğiniz komutu anlayamadım.\n/yardim yazarak daha fazla bilgi alabilirsiniz.")
 
 async def post_init(application: Application):
     print("the bot is initiliazed")
@@ -115,6 +115,7 @@ async def receivePollAnswer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     isVoted = False
     votedOption = None
 
+
     if len(answer.option_ids) > 0:
         # A user is voted something.
         isVoted = True
@@ -125,6 +126,8 @@ async def receivePollAnswer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN)
 
+def oyla(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("")
 
 if __name__ == '__main__':
     print("Bot is alive.")
@@ -133,10 +136,12 @@ if __name__ == '__main__':
 
 
     getMenu_handler = CommandHandler('menu', getMenuByRequest)
-    poll_handler = CommandHandler("oyla", poll)
+    poll_handler = CommandHandler("poll", poll)
     receivePollAnswer_handler = PollAnswerHandler(receivePollAnswer)
-    start_handler = CommandHandler(["basla", "yardim"], start)
+    start_handler = CommandHandler(["basla", "yardim", "start"], start)
+    oyla_handler = CommandHandler("oyla", oyla)
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
+
 
     # SET INTERVAL TO 1800
     application.job_queue.run_repeating(callback=sendMenuOfDay, interval=1800, chat_id=GROUP_ID)
@@ -144,6 +149,7 @@ if __name__ == '__main__':
     application.add_handler(getMenu_handler)
     application.add_handler(start_handler)
     application.add_handler(poll_handler)
+    application.add_handler(oyla_handler)
     application.add_handler(receivePollAnswer_handler)
     application.add_handler(unknown_handler) # This should be in last line
 

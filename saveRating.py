@@ -4,13 +4,11 @@ import requests
 def saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN):
     url = f"{API_URL}/saveRating"
     
-    
-
     data = {
         "pollId": pollId,
         "votedBy": votedBy,
         "isVoted": isVoted,
-        "votedOption": votedOption + 1 if votedOption else None,
+        "votedOption": votedOption + 1 if votedOption != None else None,
         "token": TOKEN
     }
 

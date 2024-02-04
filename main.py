@@ -113,8 +113,12 @@ async def poll(context: ContextTypes.DEFAULT_TYPE):
     bindMenuWithPoll(message.poll.id, TOKEN, API_URL)
 
 async def pollByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_chat.id) != GROUP_ID: 
+        return
+    
     questions = ["Çok kötü", "Kötü", "Ortalama", "Güzel", "Çok güzel"]
     
+
     message = await context.bot.send_poll(
         GROUP_ID,
         "Yemek nasıldı?",

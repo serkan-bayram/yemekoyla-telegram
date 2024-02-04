@@ -14,6 +14,15 @@ def saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN):
 
     json_string = json.dumps(data)
 
-    requests.post(url, json = json_string)
+    response = requests.post(url, json = json_string)
+    
+    print("Response from /saveRating: ", response.json())
 
 
+    if "error" in response.json():
+        error = response.json()["error"]
+        if error == "userHasNotFound":
+            return "Değerlendirmeniz kaydedilmedi, yemeklerin iyileşmesine yardımcı olmak için lütfen sitemize kaydolun. ☺️"
+        return "Değerlendirmeniz kaydedilemedi, lütfen daha sonra tekrar deneyin."
+
+    return "Değerlendirmeniz kaydedildi! Teşekkürler. ☺️"

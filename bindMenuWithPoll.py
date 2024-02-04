@@ -17,5 +17,8 @@ def bindMenuWithPoll(pollId, token, API_URL):
     json_string = json.dumps(data)  
 
     response = requests.post(url, json = json_string)
+
+    print("Response from /bindMenuWithPoll: ", response.json())
+
     
 

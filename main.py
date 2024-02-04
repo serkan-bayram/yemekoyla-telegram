@@ -74,7 +74,7 @@ async def sendMenuOfDay(context: ContextTypes.DEFAULT_TYPE):
     
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️\n\n/oyla komutuyla Telegram hesabınızı Yemekoyla ile bağlayabilir, yemekhane yemeklerimizi iyileştirme yolunda sizinde katkınız olabilir. 😊"
+    text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️\n\n/bagla komutuyla Telegram hesabınızı Yemekoyla ile bağlayabilir, yemekhane yemeklerimizi iyileştirme yolunda sizinde katkınız olabilir. 😊"
 
     await context.bot.send_message(chat_id=update.effective_user.id, text=text)
 
@@ -96,6 +96,35 @@ async def poll(context: ContextTypes.DEFAULT_TYPE):
         allows_multiple_answers=False,
     )
     
+    print("New poll created: ", message.poll.id)
+
+    # Save some info about the poll the bot_data for later use in receive_poll_answer
+    payload = {
+        message.poll.id: {
+            "questions": questions,
+            "message_id": message.message_id,
+            "chat_id": GROUP_ID,
+            "answers": 0,
+        }
+    }
+    
+    context.bot_data.update(payload)
+
+    bindMenuWithPoll(message.poll.id, TOKEN, API_URL)
+
+async def pollByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    questions = ["Çok kötü", "Kötü", "Ortalama", "Güzel", "Çok güzel"]
+    
+    message = await context.bot.send_poll(
+        GROUP_ID,
+        "Yemek nasıldı?",
+        questions,
+        is_anonymous=False,
+        allows_multiple_answers=False,
+    )
+    
+    print("New poll created: ", message.poll.id)
+
     # Save some info about the poll the bot_data for later use in receive_poll_answer
     payload = {
         message.poll.id: {
@@ -118,7 +147,6 @@ async def receivePollAnswer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     isVoted = False
     votedOption = None
 
-
     if len(answer.option_ids) > 0:
         # A user is voted something.
         isVoted = True
@@ -127,9 +155,9 @@ async def receivePollAnswer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # A user is retracted its vote.
         isVoted = False
 
-    saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN)
+    response = saveRating(pollId, votedBy, isVoted, votedOption, API_URL, TOKEN)
 
-    await context.bot.send_message(chat_id=answer.user.id, text="Değerlendirmeniz kaydedildi! Teşekkürler. ☺️")
+    await context.bot.send_message(chat_id=answer.user.id, text=response)
 
 
 def oyla(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -153,7 +181,7 @@ if __name__ == '__main__':
 
 
     getMenu_handler = CommandHandler('menu', getMenuByRequest)
-    poll_handler = CommandHandler("poll", poll)
+    pollByRequest_handler = CommandHandler("poll", pollByRequest)
     receivePollAnswer_handler = PollAnswerHandler(receivePollAnswer)
     start_handler = CommandHandler(["basla", "yardim", "start"], start)
     bagla_handler = CommandHandler("bagla", bagla)
@@ -165,7 +193,7 @@ if __name__ == '__main__':
     
     application.add_handler(getMenu_handler)
     application.add_handler(start_handler)
-    application.add_handler(poll_handler)
+    application.add_handler(pollByRequest_handler)
     application.add_handler(bagla_handler)
     application.add_handler(receivePollAnswer_handler)
     application.add_handler(unknown_handler) # This should be in last line

@@ -25,8 +25,8 @@ bot = telegram.Bot(TOKEN)
 with open("group_id", "r") as f:
     GROUP_ID = f.read()
 
-# API_URL = "https://yemekhane-puanla.vercel.app/api"
-API_URL = "http://localhost:3000/api"
+API_URL = "https://yemekhane-puanla.vercel.app/api"
+# API_URL = "http://localhost:3000/api"
 
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):

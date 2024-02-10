@@ -11,6 +11,10 @@ from shouldWeSend import shouldWeSend
 from saveRating import saveRating
 from bindMenuWithPoll import bindMenuWithPoll
 from bindTelegram import bindTelegram
+from connectSofra import connectSofra
+from getSofraCardData import getSofraCardData
+from getBalanceUsers import getBalanceUsers
+import jwt
 
 # logging.basicConfig(
 #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,7 +31,7 @@ with open("group_id", "r") as f:
 
 API_URL = "https://yemekhane-puanla.vercel.app/api"
 # API_URL = "http://localhost:3000/api"
-
+FOOD_COST = 20
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -72,6 +76,28 @@ async def sendMenuOfDay(context: ContextTypes.DEFAULT_TYPE):
         print(e)
         return  
     
+async def checkUserBalances(context: ContextTypes.DEFAULT_TYPE):
+    users = getBalanceUsers(TOKEN, API_URL)
+
+    for user in users:
+        username = user["sofra_username"]
+        password = user["sofra_password"]
+
+        decoded_password = jwt.decode(password, TOKEN, algorithms=["HS256"])
+        password = decoded_password["sofra_password"]
+    
+        telegram_id = user["telegram_id"]
+
+        session = connectSofra(username, password)
+
+        if not session:
+            await context.bot.send_message(chat_id=telegram_id, text="Bakiyeniz kontrol edilemedi.")
+            return
+
+        currentBalance = getSofraCardData(session)
+        
+        if currentBalance < FOOD_COST:
+            await context.bot.send_message(chat_id=telegram_id, text=f"Dikkat! Bakiyenizde kalan miktar: ₺{currentBalance}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f"Merhaba {update.effective_user.full_name} ben YemekBot!\n\nAmacım günün yemeğini sana olabildiğince erken ulaştırmak, şimdiden afiyet olsun. ☺️\n\n/bagla komutuyla Telegram hesabınızı Yemekoyla ile bağlayabilir, yemekhane yemeklerimizi iyileştirme yolunda sizinde katkınız olabilir. 😊"
@@ -194,7 +220,8 @@ if __name__ == '__main__':
 
     # SET INTERVAL TO 1800
     application.job_queue.run_repeating(callback=sendMenuOfDay, interval=1800, chat_id=GROUP_ID)
-    
+    application.job_queue.run_repeating(callback=checkUserBalances, interval=28800)
+
     application.add_handler(getMenu_handler)
     application.add_handler(start_handler)
     application.add_handler(pollByRequest_handler)

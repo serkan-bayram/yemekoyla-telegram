@@ -14,7 +14,6 @@ from bindTelegram import bindTelegram
 from connectSofra import connectSofra
 from getSofraCardData import getSofraCardData
 from getBalanceUsers import getBalanceUsers
-import jwt
 
 # logging.basicConfig(
 #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -31,7 +30,7 @@ with open("group_id", "r") as f:
 
 API_URL = "https://yemekhane-puanla.vercel.app/api"
 # API_URL = "http://localhost:3000/api"
-FOOD_COST = 20
+FOOD_COST = 320
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -83,9 +82,6 @@ async def checkUserBalances(context: ContextTypes.DEFAULT_TYPE):
         username = user["sofra_username"]
         password = user["sofra_password"]
 
-        decoded_password = jwt.decode(password, TOKEN, algorithms=["HS256"])
-        password = decoded_password["sofra_password"]
-    
         telegram_id = user["telegram_id"]
 
         session = connectSofra(username, password)

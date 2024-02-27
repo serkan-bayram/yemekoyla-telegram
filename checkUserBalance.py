@@ -63,7 +63,7 @@ def get_captcha_image(driver):
     # Close cookie popup
     # TODO: Send cookies with selenium
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.element_to_be_clickable(
                 (By.XPATH, "/html/body/div[1]/div/div/div[2]/div/div/div[3]/button"))
         )
@@ -76,7 +76,7 @@ def get_captcha_image(driver):
 
     # Save screenshot of Captcha
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.ID, "img_captcha"))
         )
@@ -194,7 +194,7 @@ def read_image():
 
 def fill_inputs(tckimno, numbers, driver):
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.ID, "TCKIMLIKNO"))
         )
@@ -206,7 +206,7 @@ def fill_inputs(tckimno, numbers, driver):
         raise Exception("TCKimNo Input is not found: ", e)
 
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.ID, "CAPTCHA"))
         )
@@ -218,7 +218,7 @@ def fill_inputs(tckimno, numbers, driver):
         raise Exception("Captcha Input is not found: ", e)
 
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.ID, "btnLogin"))
         )
@@ -232,7 +232,7 @@ def fill_inputs(tckimno, numbers, driver):
 
 def get_user_balance(driver):
     try:
-        element = WebDriverWait(driver, 10).until(
+        element = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.ID, "CARD_BODY"))
         )

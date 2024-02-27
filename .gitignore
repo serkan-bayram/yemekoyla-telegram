@@ -4,3 +4,4 @@ bot_token
 group_id
 __pycache__
 userInfo.txt
+.env

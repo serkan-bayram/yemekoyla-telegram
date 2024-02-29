@@ -31,7 +31,7 @@ with open("group_id", "r") as f:
 
 API_URL = "https://yemekhane-puanla.vercel.app/api"
 # API_URL = "http://localhost:3000/api"
-FOOD_COST = 26
+FOOD_COST = 20
 
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):

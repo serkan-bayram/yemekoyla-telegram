@@ -15,8 +15,8 @@ headers = {'User-Agent': 'Mozilla/5.0'}
 
 
 def checkUserBalance(school_id):
-    if school_id != "16915684662":
-        return
+#    if school_id != "16915684662":
+#        return
 
     print(f"\n--- Getting balance for {school_id} ---\n")
 

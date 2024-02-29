@@ -31,7 +31,7 @@ with open("group_id", "r") as f:
 
 API_URL = "https://yemekhane-puanla.vercel.app/api"
 # API_URL = "http://localhost:3000/api"
-FOOD_COST = 25
+FOOD_COST = 26
 
 
 async def getMenuByRequest(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -91,7 +91,9 @@ async def checkUserBalances(context: ContextTypes.DEFAULT_TYPE):
         if currentBalance == None:
             continue
 
-        currentBalance = float(currentBalance.split(" ")[0])
+        currentBalance = float(currentBalance.replace(',', '.').split(" ")[0])
+
+        print(f"{school_id} balance is {currentBalance}")
 
         if currentBalance < float(FOOD_COST):
             await context.bot.send_message(chat_id=telegram_id, text=f"Dikkat! Bakiyenizde kalan miktar: {currentBalance}₺")

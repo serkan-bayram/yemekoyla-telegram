@@ -2,100 +2,96 @@ from dotenv import load_dotenv
 import requests
 import os
 import base64
-from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-import time
-import io
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 import numpy
 import pytesseract
 from PIL import ImageFilter
+from bs4 import BeautifulSoup
+import traceback
 
 LOGIN_URL = "https://unka.bilecik.edu.tr:82"
+headers = {'User-Agent': 'Mozilla/5.0'}
 
 
 def checkUserBalance(school_id):
+    if school_id != "16915684662":
+        return
+
     print(f"\n--- Getting balance for {school_id} ---\n")
 
     # We try only N times for an user
     tried_count = 0
 
     while True:
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--headless=new")
-
-        driver = webdriver.Chrome(options=options)
-
         if tried_count == 5:
             print(f"--- Getting balance is failed for {school_id} ---\n")
-            driver.quit()
             return None
 
         try:
-            get_captcha_image(driver)
+            # Using same session for everything is important
+            session = requests.Session()
+
+            cookies, rvt = get_initial_cookies(session)
+
+            get_captcha_image(session, cookies)
 
             edit_image()
 
             numbers = read_image()
 
-            fill_inputs(school_id, numbers, driver)
+            status = fill_inputs(school_id, numbers, session, cookies, rvt)
 
-            balance = get_user_balance(driver)
+            if status == 200:
+                balance = get_user_balance(session, cookies)
+                return balance
 
-            driver.quit()
-            return balance
+            raise Exception("Status is not 200: ", status)
         except Exception as e:
             tried_count += 1
             print(f"\n--- Error on Main, trying again: {e} ---\n")
-            driver.quit()
+            print(traceback.format_exc())
             continue
 
 
-def get_captcha_image(driver):
-    driver.get(LOGIN_URL)
+def get_initial_cookies(session):
+    page = session.get(
+        LOGIN_URL, headers=headers)
 
-    # Close cookie popup
-    # TODO: Send cookies with selenium
+    # This might be not neccessary
+    accept_cookies = {".AspNet.Consent": "yes"}
+
+    session.cookies.update(accept_cookies)
+
+    soup = BeautifulSoup(page.content, 'html.parser')
+
+    # Get RequestVerificationToken from a hidden input
+    rvt = soup.find("input", attrs={"name": "__RequestVerificationToken"})[
+        'value']
+
+    return session.cookies, rvt
+
+
+def fill_inputs(school_id, numbers, session, cookies, rvt):
+    payload = {'LOGIN_FIELD': 'TCKIMLIKNO',
+               'TCKIMLIKNO': school_id, 'CAPTCHA': numbers, "__RequestVerificationToken": rvt}
+
+    login_response = session.post(
+        "https://unka.bilecik.edu.tr:82/User/LoginAsync",
+        headers=headers, cookies=cookies, data=payload)
+
+    return login_response.status_code
+
+
+def get_captcha_image(session, cookies):
+    # Save captcha
     try:
-        element = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "/html/body/div[1]/div/div/div[2]/div/div/div[3]/button"))
-        )
+        captcha = session.get(
+            "https://unka.bilecik.edu.tr:82/Captcha/CaptchaImage?I=1709228631770", headers=headers, cookies=cookies)
 
-        element.click()
-
-        print("Cookie popup is closed.")
+        open("./captcha/screenshot_captcha.png", "wb").write(captcha.content)
     except:
-        raise Exception("Cookie close button is not found.")
-
-    # Save screenshot of Captcha
-    try:
-        element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.ID, "img_captcha"))
-        )
-
-        while not element.is_displayed():
-            time.sleep(1)
-            continue
-
-        time.sleep(1)
-
-        print("Captcha image is found: ", element)
-
-        image_binary = element.screenshot_as_png
-        img = Image.open(io.BytesIO(image_binary))
-        img.save("./captcha/screenshot_captcha.png")
-
-        print("Screenshot is saved.")
-    except:
-        raise Exception("Captcha is not found.")
+        raise Exception("An error happened while getting captcha image.")
 
 
 # We edit captcha because GPT refuses to read numbers
@@ -185,65 +181,21 @@ def read_image():
 
         read_numbers = response.json()["choices"][0]["message"]["content"]
 
-        print("Read numbers: ", read_numbers)
-
         return read_numbers
     except:
         raise Exception("GPT response isn't correct.")
 
 
-def fill_inputs(tckimno, numbers, driver):
+def get_user_balance(session, cookies):
     try:
-        element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.ID, "TCKIMLIKNO"))
-        )
+        personel = session.get(
+            "https://unka.bilecik.edu.tr:82/Personel", headers=headers, cookies=cookies)
 
-        element.send_keys(tckimno)
+        soup = BeautifulSoup(personel.content, 'html.parser')
 
-        print("TCKimNo is filled.")
-    except Exception as e:
-        raise Exception("TCKimNo Input is not found: ", e)
+        balance = soup.select(
+            "#CARD_BODY table tr:first-child td:last-child")[0].text
 
-    try:
-        element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.ID, "CAPTCHA"))
-        )
-
-        element.send_keys(numbers)
-
-        print("Captcha is filled.")
-    except Exception as e:
-        raise Exception("Captcha Input is not found: ", e)
-
-    try:
-        element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.ID, "btnLogin"))
-        )
-
-        element.click()
-
-        print("Login button is clicked.")
-    except Exception as e:
-        raise Exception("Login button is not found: ", e)
-
-
-def get_user_balance(driver):
-    try:
-        element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.ID, "CARD_BODY"))
-        )
-
-        td_elements = element.find_element(By.TAG_NAME,
-                                           "table").find_elements(By.TAG_NAME, "td")
-
-        user_balance = td_elements[1].get_attribute("innerText")
-
-        print("User balance: ", user_balance)
-
-        return user_balance
+        return balance.strip()
     except Exception as e:
         raise Exception("User balance is not found: ", e)

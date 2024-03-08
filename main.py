@@ -1,5 +1,4 @@
 import logging
-import asyncio
 import telegram
 from telegram import Update
 from telegram.ext import filters, ApplicationBuilder, PollAnswerHandler, ContextTypes, CommandHandler, MessageHandler, Application
@@ -11,10 +10,9 @@ from shouldWeSend import shouldWeSend
 from saveRating import saveRating
 from bindMenuWithPoll import bindMenuWithPoll
 from bindTelegram import bindTelegram
-from connectSofra import connectSofra
-from getSofraCardData import getSofraCardData
 from getUserBalances import getUserBalances
 from checkUserBalance import checkUserBalance
+from datetime import datetime, timezone, timedelta
 
 # logging.basicConfig(
 #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -28,6 +26,8 @@ bot = telegram.Bot(TOKEN)
 
 with open("group_id", "r") as f:
     GROUP_ID = f.read()
+
+tz = timezone(timedelta(hours=3))
 
 API_URL = "https://yemekhane-puanla.vercel.app/api"
 # API_URL = "http://localhost:3000/api"
@@ -79,6 +79,8 @@ async def sendMenuOfDay(context: ContextTypes.DEFAULT_TYPE):
 
 
 async def checkUserBalances(context: ContextTypes.DEFAULT_TYPE):
+    print("Checking user balances...")
+
     users = getUserBalances(TOKEN, API_URL)
 
     for user in users:
@@ -224,8 +226,9 @@ if __name__ == '__main__':
 
     application.job_queue.run_repeating(
         callback=sendMenuOfDay, interval=1800, chat_id=GROUP_ID)
-    application.job_queue.run_repeating(
-        callback=checkUserBalances, interval=43200, first=1)
+
+    application.job_queue.run_daily(
+        callback=checkUserBalances, days=(1, 2, 3, 4, 5), time=datetime(1, 1, 1, 11, 00, tzinfo=tz))
 
     application.add_handler(getMenu_handler)
     application.add_handler(start_handler)
